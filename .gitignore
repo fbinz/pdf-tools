@@ -1,4 +1,4 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# See https://help.github.com/articles/ignoring-pdfDocuments/ for more about ignoring pdfDocuments.
 
 # dependencies
 /node_modules
@@ -21,3 +21,4 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+/src/tailwind.output.css
