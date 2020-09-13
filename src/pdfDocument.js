@@ -1,11 +1,13 @@
 import { PDFDocument } from 'pdf-lib';
 import { readFileAsync } from './util';
 import _ from 'lodash';
+import { v4 as uuid } from 'uuid';
 
 export class PdfDocument {
   constructor(file, pdfDoc) {
     this.file = file;
     this.pdfDoc = pdfDoc;
+    this.id = uuid();
   }
 
   get pageCount() {
@@ -33,6 +35,7 @@ export class PdfDocument {
   }
 
   static async split(srcDoc, atPage) {
+    atPage = _.clamp(atPage, 0, srcDoc.pageCount);
     return Promise.all([
       PdfDocument.copyPages(srcDoc, srcDoc.file.name + 'A', _.range(atPage)),
       PdfDocument.copyPages(srcDoc, srcDoc.file.name + 'B', _.range(atPage, srcDoc.pageCount))

@@ -16,24 +16,40 @@ function App() {
       <h1 className="tracking-wider pt-10 text-center text-4xl">PDF-TOOLS</h1>
       <h2 className="text-center mb-10">no upload - just your browser</h2>
       <FileInput />
-      <div className="flex w-full flow-row justify-between">
-        <Button className="flex-1">Download All</Button>
-      </div>
     </div>
   </div>
 }
 
+async function downloadDoc(doc) {
+  const url = await doc.blobUrl();
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'download';
+  const clickHandler = () => {
+    setTimeout(() => {
+      URL.revokeObjectURL(url); a.removeEventListener('click', clickHandler);
+    }, 150);
+  };
+  a.addEventListener('click', clickHandler, false);
+  a.click();
+}
+
 function FileInput() {
-  const [pdfDocs, setPdfDocs] = useState([]);
+  const [pdfDocs, setPdfDocs] = useState(new Map());
 
   function onDrop(newFiles) {
     setPdfDocs(produce(draft => {
       for (const file of newFiles) {
-        if (!_.find(draft, f => file.name === f.name)) {
-          draft.push(new PdfDocument(file));
-        }
+        const doc = new PdfDocument(file);
+        draft.set(doc.id, doc);
       }
     }));
+  }
+
+  function downloadAll() {
+    for (const [id, doc] of pdfDocs) {
+      downloadDoc(doc)
+    }
   }
 
   return <DndProvider backend={HTML5Backend}>
@@ -43,6 +59,9 @@ function FileInput() {
           <PdfDocumentList pdfDocs={pdfDocs} setPdfDocs={setPdfDocs}/>
         </div>
       </FileDropArea>
+    </div>
+    <div className="flex w-full flow-row justify-between">
+      <Button className="flex-1" onClick={() => downloadAll()}>Download All</Button>
     </div>
   </DndProvider>
 }
@@ -67,18 +86,23 @@ function PdfDocumentList({pdfDocs, setPdfDocs}) {
 
   function reorder(fromIdx, toIdx) {
     setPdfDocs(produce(draft => {
-      const [removed] = draft.splice(fromIdx, 1);
-      draft.splice(toIdx, 0, removed);
+      const assocs = [...draft];
+      const [removed] = assocs.splice(fromIdx, 1);
+      assocs.splice(toIdx, 0, removed);
+      const newMap = new Map();
+      assocs.forEach(kv => newMap.set(...kv));
+      return newMap;
     }))
   }
 
-  async function merge(base, toBeMerged) {
-    const idxBase = _.findIndex(pdfDocs, d => d.name === base);
-    const idxToBeMerged = _.findIndex(pdfDocs, d => d.name === toBeMerged);
-    const mergedDoc = await PdfDocument.merge(pdfDocs[idxBase], pdfDocs[idxToBeMerged]);
+  async function merge(partAId, partBId) {
+    const partA = pdfDocs.get(partAId);
+    const partB = pdfDocs.get(partBId);
+    const doc = await PdfDocument.merge(partA, partB);
     setPdfDocs(produce(draft => {
-      draft[idxBase] = mergedDoc;
-      draft.splice(idxToBeMerged, 1);
+      draft.delete(partAId);
+      draft.delete(partBId);
+      draft.set(doc.id, doc);
     }))
   }
 
@@ -95,8 +119,8 @@ function PdfDocumentList({pdfDocs, setPdfDocs}) {
 
   return <DragDropContext onDragEnd={onDragEnd}>
     <Droppable droppableId="droppable" isCombineEnabled>{(provided, snapshot) =>
-      <div {...provided.droppableProps} ref={provided.innerRef}>{pdfDocs.map((pdfDoc, index) =>
-        <Draggable key={pdfDoc.name} draggableId={pdfDoc.name} index={index}>{(provided, snapshot) =>
+      <div {...provided.droppableProps} ref={provided.innerRef}>{[...pdfDocs].map(([id, pdfDoc], index) =>
+        <Draggable key={id} draggableId={id} index={index}>{(provided, snapshot) =>
           <div className="relative w-full" ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
             <PdfDocumentComponent doc={pdfDoc} setPdfDocs={setPdfDocs}/>
             {snapshot.combineTargetFor ? <div className="absolute inset-0 w-full h-full bg-blue-200 text-center opacity-50">
@@ -157,34 +181,17 @@ function PdfDocumentComponent({doc, setPdfDocs}) {
   async function split() {
     const [partA, partB] = await PdfDocument.split(doc, 10);
     setPdfDocs(produce(draft => {
-      const idx = draft.indexOf(doc);
-      draft.splice(idx, 1, partA, partB);
+      draft.delete(doc.id);
+      draft.set(partA.id, partA);
+      draft.set(partB.id, partB);
     }))
   }
 
   function remove() {
     setPdfDocs(produce(draft => {
-      const idx = draft.indexOf(doc);
-      draft.splice(idx, 1);
+      draft.delete(doc.id);
     }))
   }
-
-  async function download() {
-    const url = await doc.blobUrl();
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'download';
-    const clickHandler = () => {
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-        a.removeEventListener('click', clickHandler);
-      }, 150);
-    };
-    a.addEventListener('click', clickHandler, false);
-    a.click();
-  }
-
-
 
   return <div className="flex flex-col rounded border border-gray-400 p-2 w-full bg-gray-200">
     <div className="flex items-center">
@@ -192,7 +199,7 @@ function PdfDocumentComponent({doc, setPdfDocs}) {
       <Button className="text-sm ml-1" onClick={() => setShowExtractMenu(!showExtractMenu)}>EXTRACT</Button>
       <Button className="text-sm ml-1" onClick={() => split()}>SPLIT</Button>
       <Button className="text-sm ml-1" onClick={() => remove()}>REMOVE</Button>
-      <Button className="text-sm ml-1" onClick={() => download()}>DOWNLOAD</Button>
+      <Button className="text-sm ml-1" onClick={() => downloadDoc(doc)}>DOWNLOAD</Button>
     </div>
     {ExtractMenu()}
   </div>
