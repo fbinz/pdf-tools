@@ -1,0 +1,22 @@
+{
+  "files": {
+    "main.css": "/pdf-tools/static/css/main.a79e2427.chunk.css",
+    "main.js": "/pdf-tools/static/js/main.c081a362.chunk.js",
+    "main.js.map": "/pdf-tools/static/js/main.c081a362.chunk.js.map",
+    "runtime-main.js": "/pdf-tools/static/js/runtime-main.b352d15c.js",
+    "runtime-main.js.map": "/pdf-tools/static/js/runtime-main.b352d15c.js.map",
+    "static/js/2.fbbb2a94.chunk.js": "/pdf-tools/static/js/2.fbbb2a94.chunk.js",
+    "static/js/2.fbbb2a94.chunk.js.map": "/pdf-tools/static/js/2.fbbb2a94.chunk.js.map",
+    "index.html": "/pdf-tools/index.html",
+    "precache-manifest.4a3308c8fddddd98f2c156a32a0c3b2f.js": "/pdf-tools/precache-manifest.4a3308c8fddddd98f2c156a32a0c3b2f.js",
+    "service-worker.js": "/pdf-tools/service-worker.js",
+    "static/css/main.a79e2427.chunk.css.map": "/pdf-tools/static/css/main.a79e2427.chunk.css.map",
+    "static/js/2.fbbb2a94.chunk.js.LICENSE.txt": "/pdf-tools/static/js/2.fbbb2a94.chunk.js.LICENSE.txt"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.b352d15c.js",
+    "static/js/2.fbbb2a94.chunk.js",
+    "static/css/main.a79e2427.chunk.css",
+    "static/js/main.c081a362.chunk.js"
+  ]
+}
