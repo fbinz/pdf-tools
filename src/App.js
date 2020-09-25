@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {DndProvider, useDrop} from "react-dnd";
 import {HTML5Backend, NativeTypes} from "react-dnd-html5-backend";
 import {DragDropContext, Draggable, Droppable} from 'react-beautiful-dnd';
@@ -145,6 +145,9 @@ function PdfDocumentComponent({doc, setPdfDocs}) {
   const [extractStop, setExtractStop] = useNumber(100, 1, 100);
   const [extractStep, setExtractStep] = useNumber(1, 1, 100);
 
+  const [showSplitMenu, setShowSplitMenu] = useState(false);
+  const [splitWhere, setSplitWhere] = useState(1);
+
   function ExtractMenu() {
     if (!showExtractMenu) {
       return null;
@@ -154,8 +157,8 @@ function PdfDocumentComponent({doc, setPdfDocs}) {
       const indices = _.range(extractStart - 1, extractStop, extractStep);
       const newDoc = await PdfDocument.extractPages(doc, indices);
       setPdfDocs(produce(draft => {
-        const idx = draft.indexOf(doc);
-        draft.splice(idx, 1, newDoc);
+        draft.delete(doc.id);
+        draft.set(newDoc.id, newDoc);
       }))
     }
 
@@ -178,8 +181,26 @@ function PdfDocumentComponent({doc, setPdfDocs}) {
     </div>
   }
 
+  function SplitMenu() {
+    if (!showSplitMenu) {
+      return null;
+    }
+
+    return <div className="flex flex-col w-full">
+      <hr className="my-2"/>
+      <div className="flex justify-end">
+        <div>
+          <label htmlFor="extract-start">Where:</label>
+          <input className="w-20" id="split-where" name="split-where" type="number" step={1}
+                 onChange={ev => setSplitWhere(ev.target.value)} value={splitWhere}/>
+          <Button type="submit" onClick={() => split()}>Split Pages</Button>
+        </div>
+      </div>
+    </div>
+  }
+
   async function split() {
-    const [partA, partB] = await PdfDocument.split(doc, 10);
+    const [partA, partB] = await PdfDocument.split(doc, splitWhere);
     setPdfDocs(produce(draft => {
       draft.delete(doc.id);
       draft.set(partA.id, partA);
@@ -193,15 +214,16 @@ function PdfDocumentComponent({doc, setPdfDocs}) {
     }))
   }
 
-  return <div className="flex flex-col rounded border border-gray-400 p-2 w-full bg-gray-200">
+  return <div className="flex flex-col rounded border border-gray-400 p-2 w-full bg-gray-200 relative">
     <div className="flex items-center">
       <div className="flex-1">{doc.name} {isPending ? 'Loading....' : `(${doc.pageCount})`}</div>
       <Button className="text-sm ml-1" onClick={() => setShowExtractMenu(!showExtractMenu)}>EXTRACT</Button>
-      <Button className="text-sm ml-1" onClick={() => split()}>SPLIT</Button>
+      <Button className="text-sm ml-1" onClick={() => setShowSplitMenu(!showSplitMenu)}>SPLIT</Button>
       <Button className="text-sm ml-1" onClick={() => remove()}>REMOVE</Button>
       <Button className="text-sm ml-1" onClick={() => downloadDoc(doc)}>DOWNLOAD</Button>
     </div>
     {ExtractMenu()}
+    {SplitMenu()}
   </div>
 }
 
